@@ -115,6 +115,7 @@
 | 2026-10-06 | 7.4 | Owner: Smartsupp live chat removed (loader in `index.html`, hide-on-admin effect in `App.tsx`); admin path shortened to `/private-user/`. |
 | 2026-10-06 | 7.4 | Owner: keep `/private-user/` as the live admin path (no random `ADMIN_PATH`; simpler to run). Random-path docs from `e8724b5` reverted; `ADMIN_PATH` stays unset in hPanel. |
 | 2026-10-06 | 7.1 | Owner go-ahead: `nuvexa-main` pushed to `webspectron/novaTransport` `main` (fast-forward `7e48f8b..ea885fd`) and force-pushed to `ojrandy/nuvexaglobaltransport` `main` (replaced SDL history `8161ae7`, `--force-with-lease`). Both at `ea885fd`. |
+| 2026-10-08 | 7.4 | Owner: Smartsupp live chat re-added (key `87d8…75c1`) at the end of `index.html` `<body>`; skipped when the server marks the page `<meta name="admin-console">`, so it never loads on `/private-user/`. CSP is off in helmet, so no header change. |
 
 ---
 

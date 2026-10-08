@@ -62,5 +62,21 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <noscript>Powered by <a href="https://coretexcoregroup.com" target="_blank" rel="noopener">Coretex Core Group</a></noscript>
+
+    <!-- Smartsupp Live Chat. Public site only: skipped on the admin console page, which the server
+         marks with <meta name="admin-console"> (see server/index.ts). -->
+    <script type="text/javascript">
+      if (!document.querySelector('meta[name="admin-console"]')) {
+        var _smartsupp = _smartsupp || {};
+        _smartsupp.key = '87d89823701526017764755ee20b0fcdd85275c1';
+        window.smartsupp||(function(d) {
+          var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
+          s=d.getElementsByTagName('script')[0];c=d.createElement('script');
+          c.type='text/javascript';c.charset='utf-8';c.async=true;
+          c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
+        })(document);
+      }
+    </script>
+    <noscript>Powered by <a href="https://www.smartsupp.com" target="_blank" rel="noopener">Smartsupp</a></noscript>
   </body>
 </html>
