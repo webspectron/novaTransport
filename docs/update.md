@@ -213,9 +213,9 @@ The public booking `POST /api/shipments` **never** accepts payment data; Create 
 ## 7. Tasks
 
 ### Phase A — Storage foundation
-- [ ] A.1 `server/uploads.ts`: `UPLOADS_DIR` (default beside `DB_PATH`, else `data/uploads`) with `proofs/` created on start (`ensureUploadDirs()` in `server/index.ts`, path in the start log). Document in `.env.example` and `docs/DEPLOYMENT.md` §4/§8 (persistent folder outside the deploy dir, in backups).
-- [ ] A.2 Upload helper in `server/uploads.ts`: decode base64/data URL, magic bytes (WebP/JPEG/PNG), 2 MB cap, `<uuid>.<ext>` names, `resolveUploadPath`, safe delete. Test: `scripts/uploads.test.ts`.
-- [ ] A.3 `src/services/imageCompress.ts`: ≤1600 px, WebP (JPEG fallback, white background), quality steps to fit 2 MB, EXIF dropped, HEIC where the browser can decode it.
+- [x] A.1 `server/uploads.ts`: `UPLOADS_DIR` (default beside `DB_PATH`, else `data/uploads`) with `proofs/` created on start (`ensureUploadDirs()` in `server/index.ts`, path in the start log). Document in `.env.example` and `docs/DEPLOYMENT.md` §4/§8 (persistent folder outside the deploy dir, in backups).
+- [x] A.2 Upload helper in `server/uploads.ts`: decode base64/data URL, magic bytes (WebP/JPEG/PNG), 2 MB cap, `<uuid>.<ext>` names, `resolveUploadPath`, safe delete. Test: `scripts/uploads.test.ts`.
+- [x] A.3 `src/services/imageCompress.ts`: ≤1600 px, WebP (JPEG fallback, white background), quality steps to fit 2 MB, EXIF dropped, HEIC where the browser can decode it.
 
 ### Phase B — Payment method registry & icons
 - [ ] B.1 `src/shared/paymentValidation.ts` + `src/shared/paymentMethods.ts`: the 17 approved types (D-1) with label, icon key, fields, validators (email, https URL with host check, phone, IBAN mod-97, sort code, ABA routing, SWIFT/BIC, crypto address per coin/network, handles, account digits), `validatePaymentDetails`, `customerMethodView`. Test: `scripts/paymentMethods.test.ts`.
@@ -322,3 +322,5 @@ edit pen), I.7 (Edit Shipment worldwide fix), email notifications, a shared/glob
 |---|---|---|
 | 2026-10-13 | — | Plan written (this file + `docs/prompt-update.md`) from a read-only study of this repo and Queens Cargo. No application code changed. Baseline: build 0 TS errors, 34/34 tests. |
 | 2026-10-13 | — | Owner answered Q1–Q8 (D-1 … D-9): 17 methods, no mobile money; USD/GBP/EUR, USD default; per-shipment; event on by default; copy + privacy line OK; live on Hostinger auto-deploy, DB_PATH persists; never push to `main` unless told. Phase A can start. |
+| 2026-10-13 | A.1–A.2 | `server/uploads.ts` (proofs/ only, magic-byte check, 2 MB cap, `<uuid>.<ext>`, `resolveUploadPath`), `ensureUploadDirs()` + uploads path in the start log, `UPLOADS_DIR` in `.env.example` and DEPLOYMENT §4/§8. Test `scripts/uploads.test.ts`. Build 0 errors, tests 39/39; scratch server creates `proofs/`, files survive restart, `/uploads/*` and `/proofs/*` 404. |
+| 2026-10-13 | A.3 | `src/services/imageCompress.ts` ported (≤1600 px, WebP/JPEG fallback, EXIF dropped). Browser check deferred to E.3, where it is first used. |
