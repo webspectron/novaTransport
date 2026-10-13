@@ -2,7 +2,7 @@ import React, { useId, useRef, useState } from 'react';
 import { ImagePlus, Loader2 } from 'lucide-react';
 import type { PublicPayment } from '../shared/paymentRequest';
 import { validateProofSubmission } from '../shared/paymentProof';
-import { compressImage } from '../services/imageCompress';
+import { compressImage, ImageCompressError } from '../services/imageCompress';
 import { api } from '../services/api';
 
 interface PaymentProofFormProps {
@@ -19,6 +19,7 @@ const MSG = {
   noImage: 'Add a screenshot of the payment.',
   notImage: 'This file isn\'t an image. Upload a JPG, PNG, WebP or HEIC.',
   unreadable: 'This image could not be read. Try another file or take a new screenshot.',
+  tooLarge: 'This image is too large. Try a smaller image or take a new screenshot.',
   network: 'We couldn\'t send your proof. Check your connection and try again.',
 };
 
@@ -72,9 +73,10 @@ export const PaymentProofForm: React.FC<PaymentProofFormProps> = ({ trackingNumb
     try {
       const compressed = await compressImage(file);
       setImage({ dataUrl: `data:${compressed.mimeType};base64,${compressed.base64}` });
-    } catch {
+    } catch (err) {
       setImage(null);
-      setErrors((e) => ({ ...e, image: MSG.unreadable }));
+      const tooLarge = err instanceof ImageCompressError && /too large/i.test(err.message);
+      setErrors((e) => ({ ...e, image: tooLarge ? MSG.tooLarge : MSG.unreadable }));
     } finally {
       setPreparing(false);
       if (fileInput.current) fileInput.current.value = '';
@@ -100,7 +102,12 @@ export const PaymentProofForm: React.FC<PaymentProofFormProps> = ({ trackingNumb
       const result = await api.submitPaymentProof(trackingNumber, { ...checked.value, reference: checked.value.reference ?? undefined, image: image.dataUrl });
       onSent(result.submittedAt);
     } catch (err: any) {
-      if (err?.fieldErrors) {
+      if (err?.status === 413) {
+        // Over the server's request limit (should not happen after compression): ask for a smaller image.
+        const errs = { image: MSG.tooLarge };
+        setErrors(errs);
+        focusFirstError(errs);
+      } else if (err?.fieldErrors) {
         setErrors(err.fieldErrors);
         focusFirstError(err.fieldErrors);
       } else if (err?.status === 409 || err?.status === 429) {

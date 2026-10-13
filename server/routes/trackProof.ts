@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db.js';
 import { paymentProofLimiter } from '../middleware/rateLimit.js';
-import { deleteUpload, saveImageUpload } from '../uploads.js';
+import { commitUpload, discardUpload, stageImageUpload } from '../uploads.js';
 import { getShipmentPayment } from './shipmentPayments.js';
 import { BAD_TRACKING_ID_MESSAGE } from './track.js';
 import { parseTrackingInput } from '../../src/shared/trackingId.js';
@@ -19,7 +19,10 @@ const TOO_MANY_OPEN = 'We already have proofs waiting for review for this paymen
 const NOT_AN_IMAGE = 'This file isn\'t an image. Upload a JPG, PNG, WebP or HEIC.';
 
 trackProofRouter.post('/:trackingNumber/payment-proof', paymentProofLimiter, (req: Request, res: Response) => {
-  let savedFile: string | null = null;
+  // The screenshot is staged (<name>.part) until its row is committed, then renamed; a staged file
+  // is removed on any failure before that, and recovered on the next start after a crash.
+  let stagedFile: string | null = null;
+  let rowSaved = false;
   try {
     const parsed = parseTrackingInput(req.params.trackingNumber as string);
     if (!parsed) return res.status(400).json({ success: false, error: BAD_TRACKING_ID_MESSAGE });
@@ -44,12 +47,12 @@ trackProofRouter.post('/:trackingNumber/payment-proof', paymentProofLimiter, (re
       return res.status(400).json({ success: false, error: 'Some details need fixing.', fieldErrors });
     }
 
-    const upload = saveImageUpload('proofs', body.image);
+    const upload = stageImageUpload('proofs', body.image);
     if (!upload.ok) {
       const message = upload.error === 'The image is too large.' ? upload.error : NOT_AN_IMAGE;
       return res.status(400).json({ success: false, error: 'Some details need fixing.', fieldErrors: { image: message } });
     }
-    savedFile = upload.fileName;
+    stagedFile = upload.fileName;
 
     const proof = checked.value;
     const account = payment.methods.find((m) => m.id === proof.methodId)!;
@@ -62,7 +65,7 @@ trackProofRouter.post('/:trackingNumber/payment-proof', paymentProofLimiter, (re
         .run(now, payment.id);
       if (moved.changes === 0) {
         db.exec('ROLLBACK');
-        deleteUpload('proofs', upload.fileName);
+        discardUpload('proofs', upload.fileName);
         return res.status(409).json({ success: false, code: 'NOT_ACCEPTING', error: NOT_ACCEPTING });
       }
       // The account as it is now, since the admin can edit or remove it later.
@@ -74,15 +77,23 @@ trackProofRouter.post('/:trackingNumber/payment-proof', paymentProofLimiter, (re
         JSON.stringify({ type: account.type, label: account.label, details: account.details }),
         proof.payerName, proof.amountSent, proof.reference, upload.fileName, now);
       db.exec('COMMIT');
+      rowSaved = true;
     } catch (err) {
       db.exec('ROLLBACK');
       throw err;
     }
 
+    try {
+      commitUpload('proofs', upload.fileName);
+    } catch (err) {
+      // The proof is saved; recoverProofUploads() finishes the file on the next start.
+      console.error('[uploads] Could not finish proof file', upload.fileName, err);
+    }
+
     res.status(201).json({ success: true, data: { status: 'SUBMITTED', submittedAt: now } });
   } catch (err: any) {
-    if (savedFile) {
-      try { deleteUpload('proofs', savedFile); } catch { /* the error below matters more */ }
+    if (stagedFile && !rowSaved) {
+      try { discardUpload('proofs', stagedFile); } catch { /* the error below matters more */ }
     }
     res.status(500).json({ success: false, error: err.message });
   }

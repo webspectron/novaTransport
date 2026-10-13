@@ -278,6 +278,17 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_payment_proofs_status ON payment_proofs (status, created_at);
   `);
 
+  // Hit counters for rate limits that must survive a restart or redeploy (the proof upload limit,
+  // server/middleware/rateLimit.ts). key = limiter name + a keyed hash of the IP, never the IP
+  // itself; rows are dropped once their window has passed.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS rate_limit_hits (
+      key TEXT PRIMARY KEY,
+      hits INTEGER NOT NULL,
+      reset_at INTEGER NOT NULL
+    );
+  `);
+
   // Safe dynamic migrations for existing databases. Must run after every CREATE TABLE above
   // (shipments through settings) — these ALTER statements target quote_requests, documents
   // and tracking_events too, and running them any earlier throws "no such table" on a

@@ -8,7 +8,8 @@ import path from 'path';
 // Point UPLOADS_DIR at a throwaway folder before the module reads it.
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ngt-uploads-'));
 process.env.UPLOADS_DIR = tmp;
-const { detectImageType, decodeImageUpload, saveImageUpload, resolveUploadPath, deleteUpload, uploadFolders, ensureUploadDirs } =
+const { detectImageType, decodeImageUpload, saveImageUpload, stageImageUpload, commitUpload, discardUpload, recoverStagedUploads,
+  resolveUploadPath, deleteUpload, uploadFolders, ensureUploadDirs } =
   await import('../server/uploads.ts');
 ensureUploadDirs();
 
@@ -80,6 +81,42 @@ test('uploads: saved under a random name in the right folder; foreign names are 
 
   assert.equal(saveImageUpload('proofs', Buffer.from('hello').toString('base64')).ok, false);
   assert.deepEqual(fs.readdirSync(uploadFolders.proofs), []);
+});
+
+test('uploads: staged files become final only on commit; discard removes them', () => {
+  const dataUrl = `data:image/png;base64,${PNG.toString('base64')}`;
+  const staged = stageImageUpload('proofs', dataUrl);
+  assert.ok(staged.ok);
+  if (!staged.ok) return;
+  assert.deepEqual(fs.readdirSync(uploadFolders.proofs), [`${staged.fileName}.part`]);
+  commitUpload('proofs', staged.fileName);
+  assert.deepEqual(fs.readdirSync(uploadFolders.proofs), [staged.fileName]);
+  deleteUpload('proofs', staged.fileName);
+
+  const dropped = stageImageUpload('proofs', dataUrl);
+  assert.ok(dropped.ok);
+  if (!dropped.ok) return;
+  discardUpload('proofs', dropped.fileName);
+  discardUpload('proofs', dropped.fileName); // already gone: no throw
+  assert.deepEqual(fs.readdirSync(uploadFolders.proofs), []);
+  assert.throws(() => commitUpload('proofs', '../../ngt.db'));
+});
+
+test('uploads: start-up recovery finishes referenced staged files and removes the rest', () => {
+  const dataUrl = `data:image/png;base64,${PNG.toString('base64')}`;
+  const kept = stageImageUpload('proofs', dataUrl);
+  const unused = stageImageUpload('proofs', dataUrl);
+  const finished = saveImageUpload('proofs', dataUrl);
+  assert.ok(kept.ok && unused.ok && finished.ok);
+  if (!kept.ok || !unused.ok || !finished.ok) return;
+  fs.writeFileSync(path.join(uploadFolders.proofs, 'not-ours.part'), 'x'); // foreign name: left alone
+
+  const result = recoverStagedUploads('proofs', (name) => name === kept.fileName);
+  assert.deepEqual(result, { finished: 1, removed: 1 });
+  assert.deepEqual(fs.readdirSync(uploadFolders.proofs).sort(), [finished.fileName, kept.fileName, 'not-ours.part'].sort());
+  // A finished file with no row is never deleted on start (a wrong DB_PATH must not wipe proofs).
+  assert.deepEqual(recoverStagedUploads('proofs', () => false), { finished: 0, removed: 0 });
+  for (const name of fs.readdirSync(uploadFolders.proofs)) fs.unlinkSync(path.join(uploadFolders.proofs, name));
 });
 
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));

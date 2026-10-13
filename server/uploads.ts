@@ -82,17 +82,70 @@ export function resolveUploadPath(folder: UploadFolder, fileName: string): strin
   return path.join(uploadFolders[folder], fileName);
 }
 
-/** Validates and writes an upload under a new random name. `id` is the name without extension. */
-export function saveImageUpload(folder: UploadFolder, input: unknown):
-  { ok: true; id: string; fileName: string; sizeBytes: number; type: ImageType } | { ok: false; error: string } {
+export type SavedUpload = { ok: true; id: string; fileName: string; sizeBytes: number; type: ImageType } | { ok: false; error: string };
+
+// A staged upload sits under `<final name>.part` until the database row that refers to it is
+// committed, so a crash in between never leaves a finished file that nothing refers to.
+const PART = '.part';
+
+/**
+ * Validates an upload and writes it as `<uuid>.<ext>.part`. `fileName` is the final name to store
+ * in the database; call commitUpload() once that row is committed, or discardUpload() if it isn't.
+ */
+export function stageImageUpload(folder: UploadFolder, input: unknown): SavedUpload {
   const decoded = decodeImageUpload(input);
   if (!decoded.ok) return decoded;
   const id = crypto.randomUUID();
   const fileName = `${id}.${EXTENSIONS[decoded.type]}`;
   fs.mkdirSync(uploadFolders[folder], { recursive: true });
   // 'wx' never overwrites an existing file.
-  fs.writeFileSync(path.join(uploadFolders[folder], fileName), decoded.buffer, { flag: 'wx' });
+  fs.writeFileSync(path.join(uploadFolders[folder], fileName + PART), decoded.buffer, { flag: 'wx' });
   return { ok: true, id, fileName, sizeBytes: decoded.buffer.length, type: decoded.type };
+}
+
+/** Turns a staged upload into the finished file. */
+export function commitUpload(folder: UploadFolder, fileName: string) {
+  const filePath = resolveUploadPath(folder, fileName);
+  if (!filePath) throw new Error('Not a stored upload name.');
+  fs.renameSync(filePath + PART, filePath);
+}
+
+/** Removes a staged upload that will not be used; ignores foreign names and files already gone. */
+export function discardUpload(folder: UploadFolder, fileName: string) {
+  const filePath = resolveUploadPath(folder, fileName);
+  if (!filePath) return;
+  try { fs.unlinkSync(filePath + PART); } catch (e: any) { if (e?.code !== 'ENOENT') throw e; }
+}
+
+/** Validates and writes an upload under a new random name in one step. `id` is the name without extension. */
+export function saveImageUpload(folder: UploadFolder, input: unknown): SavedUpload {
+  const staged = stageImageUpload(folder, input);
+  if (staged.ok) commitUpload(folder, staged.fileName);
+  return staged;
+}
+
+/**
+ * Run on start: finishes staged uploads whose database row was committed (the process stopped
+ * before the rename) and removes the rest. Finished files are never touched here.
+ */
+export function recoverStagedUploads(folder: UploadFolder, isReferenced: (fileName: string) => boolean): { finished: number; removed: number } {
+  let finished = 0, removed = 0;
+  let names: string[];
+  try { names = fs.readdirSync(uploadFolders[folder]); } catch { return { finished, removed }; }
+  for (const name of names) {
+    if (!name.endsWith(PART)) continue;
+    const fileName = name.slice(0, -PART.length);
+    const filePath = resolveUploadPath(folder, fileName);
+    if (!filePath) continue;
+    if (isReferenced(fileName) && !fs.existsSync(filePath)) {
+      fs.renameSync(filePath + PART, filePath);
+      finished++;
+    } else {
+      fs.unlinkSync(filePath + PART);
+      removed++;
+    }
+  }
+  return { finished, removed };
 }
 
 /** Removes a stored file; ignores names this module didn't generate and files already gone. */

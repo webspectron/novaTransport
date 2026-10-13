@@ -1,5 +1,5 @@
 import { db } from '../db.js';
-import { deleteUpload } from '../uploads.js';
+import { deleteUpload, recoverStagedUploads } from '../uploads.js';
 import type { ProofStatus, PublicProofStatus } from '../../src/shared/paymentProof.js';
 
 // Proofs of payment (docs/update.md Phase E). The screenshots are private: no public route
@@ -26,4 +26,13 @@ export function deleteProofsForShipment(tracking: string) {
   const rows = db.prepare('SELECT file_name FROM payment_proofs WHERE tracking_number = ?').all(tracking) as { file_name: string }[];
   db.prepare('DELETE FROM payment_proofs WHERE tracking_number = ?').run(tracking);
   for (const row of rows) deleteUpload('proofs', row.file_name);
+}
+
+/** On start: completes or removes proof uploads left half-way by a crash or restart (server/uploads.ts). */
+export function recoverProofUploads() {
+  const known = db.prepare('SELECT 1 FROM payment_proofs WHERE file_name = ?');
+  const result = recoverStagedUploads('proofs', (fileName) => !!known.get(fileName));
+  if (result.finished || result.removed) {
+    console.log(`[uploads] Proof uploads recovered: ${result.finished} finished, ${result.removed} unused removed.`);
+  }
 }

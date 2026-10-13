@@ -413,7 +413,7 @@ request. Hidden completely when the request is cancelled.
 - **Intro:** `After paying, upload a screenshot or photo of the receipt so our team can confirm it.`
 - **Fields:** `Account you paid to` (placeholder `Choose an account`) · `Your name` (hint `The name the payment was sent from`) · `Amount sent` · `Payment reference (optional)` (hint `Transaction ID, MTCN or reference number`) · `Screenshot of the payment` (hint `JPG, PNG, WebP or HEIC. Only our team can see it.`)
 - **Buttons:** `Choose image` · `Change image` · `Remove image` · `Send proof` · while sending `Sending…`
-- **Field errors:** `Choose the account you paid to.` · `Enter the name the payment was sent from.` · `Enter the amount you sent.` · `Add a screenshot of the payment.` · `This file isn't an image. Upload a JPG, PNG, WebP or HEIC.` · `This image could not be read. Try another file or take a new screenshot.`
+- **Field errors:** `Choose the account you paid to.` · `Enter the name the payment was sent from.` · `Enter the amount you sent.` · `Add a screenshot of the payment.` · `This file isn't an image. Upload a JPG, PNG, WebP or HEIC.` · `This image could not be read. Try another file or take a new screenshot.` · too large: `This image is too large. Try a smaller image or take a new screenshot.` (*owner to confirm*)
 - **Success:** `Thank you. Your proof of payment was sent. We'll check it and update this page.`
 - **Under review:** `Proof under review` · `We received your proof on {date} at {time}. Our team will check it and update this page.`
 - **Rejected:** `Proof not accepted: {reason}` · `Please check the details and send a new proof below.`

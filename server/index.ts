@@ -16,6 +16,7 @@ import { documentsRouter } from './routes/documents.js';
 import { settingsRouter } from './routes/settings.js';
 import { trackRouter } from './routes/track.js';
 import { trackProofRouter } from './routes/trackProof.js';
+import { recoverProofUploads } from './routes/paymentProofs.js';
 import { statsRouter } from './routes/stats.js';
 import { authRouter } from './routes/auth.js';
 import { messagesRouter } from './routes/messages.js';
@@ -46,6 +47,8 @@ if (!ADMIN_PROXY_TARGET) {
   // Initialize Persistent SQLite Database
   initDatabase();
   ensureUploadDirs();
+  // Finishes or removes proof screenshots left half-written by a crash or restart.
+  recoverProofUploads();
 }
 
 // Middleware
@@ -246,10 +249,13 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('[server] Unhandled error:', err);
   if (res.headersSent) return next(err);
   const isMalformedBody = err?.type === 'entity.parse.failed' || err instanceof SyntaxError;
-  const status = isMalformedBody ? 400 : (typeof err?.status === 'number' ? err.status : 500);
+  // A body over express.json's 5 MB limit: say so, so the caller can show a size message.
+  const isTooLarge = err?.type === 'entity.too.large';
+  const status = isMalformedBody ? 400 : isTooLarge ? 413 : (typeof err?.status === 'number' ? err.status : 500);
   res.status(status).json({
     success: false,
-    error: isMalformedBody ? 'Malformed request body.' : 'Internal server error.'
+    ...(isTooLarge ? { code: 'TOO_LARGE' } : {}),
+    error: isMalformedBody ? 'Malformed request body.' : isTooLarge ? 'The request is too large.' : 'Internal server error.'
   });
 });
 
