@@ -10,6 +10,7 @@ import { COMPANY_SHORT } from '../../src/config/brand.js';
 import { eventTimeDisplay } from '../../src/shared/timeZones.js';
 import { parseTransportMode } from '../../src/shared/transportMode.js';
 import { shipmentStatusLabel } from '../../src/shared/shipmentStatus.js';
+import { deleteShipmentPayment } from './shipmentPayments.js';
 
 export const shipmentsRouter = Router();
 
@@ -908,6 +909,8 @@ shipmentsRouter.delete('/:trackingNumber/permanent', requireAdminAuth, (req: Req
     db.prepare('DELETE FROM tracking_events WHERE shipment_tracking = ?').run(tracking);
     db.prepare('DELETE FROM documents WHERE shipment_tracking = ?').run(tracking);
     db.prepare('DELETE FROM shipments WHERE tracking_number = ?').run(tracking);
+    // Payment request (only now; trash/restore leaves it untouched).
+    deleteShipmentPayment(tracking);
     res.json({ success: true, message: `Shipment ${tracking} permanently deleted.` });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });

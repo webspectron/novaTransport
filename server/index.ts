@@ -10,6 +10,7 @@ import { initDatabase, dataDir, dbPath } from './db.js';
 import { ensureUploadDirs, uploadsDir } from './uploads.js';
 import { COMPANY } from '../src/config/brand.js';
 import { shipmentsRouter } from './routes/shipments.js';
+import { shipmentPaymentsRouter } from './routes/shipmentPayments.js';
 import { quotesRouter } from './routes/quotes.js';
 import { documentsRouter } from './routes/documents.js';
 import { settingsRouter } from './routes/settings.js';
@@ -178,6 +179,8 @@ if (ADMIN_PROXY_TARGET) {
   // before this change), so it's simpler and harder to accidentally get wrong to gate them
   // wholesale here at the mount point instead of touching every route inside those files.
   app.use('/api/auth', authRouter);
+  // Payment request per shipment (admin-only routes under /api/shipments/:id/payment).
+  app.use('/api/shipments', shipmentPaymentsRouter);
   app.use('/api/shipments', shipmentsRouter);
   app.use('/api/quotes', quotesRouter);
   // documents is ALSO mixed public+admin (the public booking flow in ShipPage.tsx
