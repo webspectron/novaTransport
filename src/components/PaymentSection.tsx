@@ -1,11 +1,13 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import type { PaymentStatus, PublicPayment } from '../shared/paymentRequest';
 import { formatPaymentAmount } from '../shared/paymentRequest';
-import { CheckCircle2, ChevronDown, Wallet } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, Clock, Upload, Wallet } from 'lucide-react';
 import { PaymentMethodCard } from './PaymentMethodCard';
+import { PaymentProofForm } from './PaymentProofForm';
 import './PaymentSection.css';
 
 interface PaymentSectionProps {
+  trackingNumber: string;
   payment: PublicPayment;
 }
 
@@ -28,6 +30,16 @@ function formatPaidDate(value: string | null): string | null {
   if (!value) return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(d);
+}
+
+/** When a proof arrived, in the visitor's own locale and time zone (E.4). */
+function formatSubmitted(value: string): { date: string; time: string } | null {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return {
+    date: new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(d),
+    time: new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }).format(d),
+  };
 }
 
 interface PaymentTabProps {
@@ -79,8 +91,11 @@ function useIsNarrow(): boolean {
  * Track Result "Payment" section (CONTENT.md §6.7): what is due, what it is for, its status,
  * and this shipment's payment accounts with copy buttons and QR codes.
  */
-export const PaymentSection: React.FC<PaymentSectionProps> = ({ payment }) => {
-  const status = payment.status;
+export const PaymentSection: React.FC<PaymentSectionProps> = ({ trackingNumber, payment }) => {
+  // Set when this visitor's proof was accepted; the request counts as under review until the
+  // next track refresh brings the server's own status.
+  const [sentAt, setSentAt] = useState<string | null>(null);
+  const status: PaymentStatus = sentAt && payment.status === 'AWAITING_PAYMENT' ? 'UNDER_REVIEW' : payment.status;
   const badge = STATUS_BADGES[status] ?? STATUS_BADGES.AWAITING_PAYMENT;
   const narrow = useIsNarrow();
   const [openId, setOpenId] = useState<string | null>(payment.methods[0]?.id ?? null);
@@ -89,8 +104,9 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ payment }) => {
   useEffect(() => () => window.clearTimeout(toastTimer.current), []);
   // Once paid, the accounts stay behind the same tab with a show/hide title (D.4).
   const isPaid = status === 'PAID';
-  // The accounts sit behind a tab, closed until opened (D.3).
+  // The accounts (D.3) and the proof form (E.3) each sit behind a tab, closed until opened.
   const [showMethods, setShowMethods] = useState(false);
+  const [showProofForm, setShowProofForm] = useState(false);
 
   const showToast = (message: string) => {
     // Clear first so the same message is announced again on a second copy.
@@ -104,6 +120,11 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ payment }) => {
   if (status === 'CANCELLED') return null;
 
   const paidDate = formatPaidDate(payment.paidAt);
+  // Proof states from the server (E.4); this visitor's own just-sent proof shows the thank-you line instead.
+  const latest = payment.proof;
+  const underReview = !sentAt && status === 'UNDER_REVIEW';
+  const submitted = underReview && latest?.status === 'SUBMITTED' ? formatSubmitted(latest.submittedAt) : null;
+  const rejected = !sentAt && status === 'AWAITING_PAYMENT' && latest?.status === 'REJECTED' ? latest : null;
   const count = payment.methods.length;
 
   return (
@@ -179,6 +200,46 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({ payment }) => {
                 </li>
               ))}
             </ul>
+          </PaymentTab>
+        </div>
+      )}
+
+      {underReview && (
+        <div className="ngt-proof-state is-review">
+          <Clock size={18} aria-hidden="true" />
+          <div>
+            <strong>Proof under review</strong>
+            {submitted && <p>We received your proof on {submitted.date} at {submitted.time}. Our team will check it and update this page.</p>}
+          </div>
+        </div>
+      )}
+
+      {rejected && (
+        <div className="ngt-proof-state is-rejected">
+          <AlertCircle size={18} aria-hidden="true" />
+          <div>
+            <strong>Proof not accepted{rejected.rejectionReason ? `: ${rejected.rejectionReason}` : ''}</strong>
+            <p>Please check the details and send a new proof below.</p>
+          </div>
+        </div>
+      )}
+
+      {sentAt && (
+        <p className="ngt-proof-sent" role="status">
+          Thank you. Your proof of payment was sent. We'll check it and update this page.
+        </p>
+      )}
+
+      {status === 'AWAITING_PAYMENT' && count > 0 && (
+        <div className="ngt-pay-proof">
+          <PaymentTab
+            icon={<Upload size={18} />}
+            title="Send proof of payment"
+            sub="Already paid? Upload your receipt so we can confirm it."
+            open={showProofForm}
+            onToggle={() => setShowProofForm((v) => !v)}
+          >
+            <PaymentProofForm trackingNumber={trackingNumber} payment={payment} onSent={setSentAt} embedded />
           </PaymentTab>
         </div>
       )}

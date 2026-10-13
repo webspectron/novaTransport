@@ -5,8 +5,12 @@ import { eventTimeDisplay } from '../../src/shared/timeZones.js';
 import { parseTrackingInput } from '../../src/shared/trackingId.js';
 import { getShipmentPayment } from './shipmentPayments.js';
 import { publicPaymentView } from '../../src/shared/paymentRequest.js';
+import { latestPublicProof } from './paymentProofs.js';
 
 export const trackRouter = Router();
+
+// Shown for anything that can't be a tracking ID (also used by the proof upload, trackProof.ts).
+export const BAD_TRACKING_ID_MESSAGE = 'Tracking IDs are 8 characters, starting with NGT (for example NGT7K2M9).';
 
 // Splits a stored "City, ST" location string into separate fields — the DB only
 // stores the combined string, but several frontend views render city/state separately.
@@ -57,7 +61,7 @@ trackRouter.get('/:trackingNumber', (req: Request, res: Response) => {
     // its parent), and reject anything that can't be a valid tracking ID before touching the DB.
     const parsed = parseTrackingInput(req.params.trackingNumber as string);
     if (!parsed) {
-      return res.status(400).json({ success: false, error: 'Tracking IDs are 8 characters, starting with NGT (for example NGT7K2M9).' });
+      return res.status(400).json({ success: false, error: BAD_TRACKING_ID_MESSAGE });
     }
     const tracking = parsed.trackingId;
     const row = db.prepare('SELECT * FROM shipments WHERE tracking_number = ? AND deleted_at_ts IS NULL').get(tracking) as any;
@@ -230,8 +234,8 @@ trackRouter.get('/:trackingNumber', (req: Request, res: Response) => {
       ],
       // The shipment's payment request (docs/update.md D.2): only its own accounts, in the admin's
       // order, without internal fields such as the linked invoice. null when there is none.
-      // Phase E (E.1) adds the latest proof's status; until then `proof` is null.
-      payment: storedPayment ? publicPaymentView(storedPayment) : null
+      // `proof` is the latest proof's status and time only (plus the reason if it was rejected, E.1).
+      payment: storedPayment ? publicPaymentView(storedPayment, latestPublicProof(storedPayment.id)) : null
     };
 
     res.json({ success: true, data: publicShipment });

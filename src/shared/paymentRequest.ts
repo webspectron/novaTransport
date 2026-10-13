@@ -4,6 +4,7 @@
 import {
   CustomerMethodView, Details, PaymentMethodType, customerMethodView, isPaymentMethodType, validatePaymentDetails,
 } from './paymentMethods.js';
+import type { PublicProofStatus } from './paymentProof.js';
 
 /** USD, GBP or EUR (update.md D-2). Shown as entered, never converted by the Settings display currency. */
 export const PAYMENT_CURRENCIES = ['USD', 'GBP', 'EUR'] as const;
@@ -155,17 +156,6 @@ export interface ShipmentPayment extends CleanPaymentRequest {
 export interface PublicPaymentAccount extends CustomerMethodView {
   id: string;
   instructions: string | null;
-}
-
-/**
- * The latest proof sent for a request, as the customer sees it: status and time only, plus the
- * rejection reason. Filled in by Phase E (update.md E.1); until then the track page gets null.
- */
-export interface PublicProofStatus {
-  status: 'SUBMITTED' | 'APPROVED' | 'REJECTED';
-  submittedAt: string;
-  /** Only for REJECTED: the reason the admin gave. */
-  rejectionReason: string | null;
 }
 
 /** What the public track response carries (D.2). No internal fields such as the linked invoice id. */
