@@ -1,15 +1,72 @@
 import { Shipment, ShipmentStatus, TrackingEvent } from '../types/shipment';
 import { QuoteRequest, QuoteRequestPricing, QuoteRequestStatus, AdminSettings, AdminDocument, DocumentStatus, ContactMessage, ContactMessageStatus } from '../types/admin';
+import type { ShipmentPayment } from '../shared/paymentRequest';
+
+/** Body for PUT /api/shipments/:id/payment (validated by validatePaymentRequest on the server). */
+export interface PaymentRequestBody {
+  amount: number | string;
+  currency: string;
+  chargeReason: string;
+  dueDate?: string;
+  invoiceDocumentId?: string;
+  customerNote?: string;
+  methods: { id?: string; type: string; label?: string; details: Record<string, string>; instructions?: string }[];
+}
+
 
 const API_BASE = '/api';
 
+// ---------------------------------------------------------------------------------------------
+// Every request in this module goes through fetchApi (docs/update.md C.6). The hosting CDN sometimes
+// answers an API call with an HTML page (its bot check, or a placeholder while the app restarts)
+// or drops the connection. Reads are safe to repeat, so they are retried twice with a short
+// pause; writes are sent once, so nothing is ever saved twice.
+// ---------------------------------------------------------------------------------------------
+
+const RETRY_DELAYS_MS = [700, 1800];
+const UNREACHABLE = "We couldn't reach the server just now. Please try again in a moment.";
+const UNCONFIRMED = "We couldn't confirm the server received this. Refresh the page to check, then try again if needed.";
+// The method of each response, so handleResponse can word a failed write differently.
+const requestMethods = new WeakMap<Response, string>();
+
+const isJsonResponse = (res: Response) => (res.headers.get('content-type') || '').includes('json');
+
+async function fetchApi(input: string, init: RequestInit = {}): Promise<Response> {
+  const method = (init.method || 'GET').toUpperCase();
+  const retryable = method === 'GET' || method === 'HEAD';
+  const attempts = retryable ? RETRY_DELAYS_MS.length + 1 : 1;
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt - 1]));
+    try {
+      const res = await fetch(input, init);
+      requestMethods.set(res, method);
+      // A non-JSON reply to a read is the CDN, not the app: try again.
+      if (retryable && !isJsonResponse(res) && res.status !== 204 && attempt < attempts - 1) continue;
+      return res;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  console.warn(`[api] ${method} ${input} failed: no response from the server.`, lastError);
+  const err: any = new Error(retryable ? UNREACHABLE : UNCONFIRMED);
+  err.status = 0;
+  err.unreachable = true;
+  throw err;
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
   let json: any;
+  const text = await res.text();
   try {
-    json = await res.json();
+    json = JSON.parse(text);
   } catch {
-    const err: any = new Error(`Server returned non-JSON response (HTTP ${res.status})`);
+    // Not the app's answer (see fetchApi). Keep the technical details in the console only.
+    const method = requestMethods.get(res) || 'GET';
+    console.warn(`[api] ${method} ${res.url} returned a non-JSON reply (HTTP ${res.status}, ${res.headers.get('content-type') || 'no content type'}):`, text.slice(0, 160));
+    const err: any = new Error(method === 'GET' || method === 'HEAD' ? UNREACHABLE : UNCONFIRMED);
     err.status = res.status;
+    err.unreachable = true;
     throw err;
   }
   if (!res.ok || json.success === false) {
@@ -18,6 +75,8 @@ async function handleResponse<T>(res: Response): Promise<T> {
     // refresh, which used to retry every 12s forever even for a logged-out visitor.
     const err: any = new Error(json.error || `HTTP error ${res.status}`);
     err.status = res.status;
+    // Per-field messages from form endpoints (e.g. payment methods), keyed by field name.
+    if (json.fieldErrors) err.fieldErrors = json.fieldErrors;
     throw err;
   }
   return json.data !== undefined ? json.data : json;
@@ -28,7 +87,7 @@ export const api = {
   async login(password: string): Promise<{ success: boolean }> {
     let res: Response;
     try {
-      res = await fetch(`${API_BASE}/auth/login`, {
+      res = await fetchApi(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -56,12 +115,12 @@ export const api = {
   },
 
   async logout(): Promise<void> {
-    await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+    await fetchApi(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
   },
 
   async checkSession(): Promise<boolean> {
     try {
-      const res = await fetch(`${API_BASE}/auth/session`, { credentials: 'include', cache: 'no-store' });
+      const res = await fetchApi(`${API_BASE}/auth/session`, { credentials: 'include', cache: 'no-store' });
       const json = await res.json();
       return Boolean(json?.isAdmin);
     } catch {
@@ -71,13 +130,13 @@ export const api = {
 
   // Public Tracking
   async trackShipment(trackingNumber: string): Promise<Shipment> {
-    const res = await fetch(`${API_BASE}/track/${encodeURIComponent(trackingNumber)}`);
+    const res = await fetchApi(`${API_BASE}/track/${encodeURIComponent(trackingNumber)}`);
     return handleResponse<Shipment>(res);
   },
 
   // Public Booking & Quotes
   async submitPublicQuote(quoteData: Partial<QuoteRequest>): Promise<QuoteRequest> {
-    const res = await fetch(`${API_BASE}/quotes`, {
+    const res = await fetchApi(`${API_BASE}/quotes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(quoteData)
@@ -86,7 +145,7 @@ export const api = {
   },
 
   async submitPublicShipment(shipmentData: Partial<Shipment>): Promise<Shipment> {
-    const res = await fetch(`${API_BASE}/shipments`, {
+    const res = await fetchApi(`${API_BASE}/shipments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(shipmentData)
@@ -99,19 +158,19 @@ export const api = {
     const query = new URLSearchParams();
     if (params?.search) query.set('search', params.search);
     if (params?.status) query.set('status', params.status);
-    const res = await fetch(`${API_BASE}/shipments?${query.toString()}`);
+    const res = await fetchApi(`${API_BASE}/shipments?${query.toString()}`);
     return handleResponse<Shipment[]>(res);
   },
 
   // Soft-deleted shipments — "Delete" moves a shipment here rather than erasing it; this is
   // the Recently Deleted / trash list.
   async getTrashedShipments(): Promise<Shipment[]> {
-    const res = await fetch(`${API_BASE}/shipments?trash=true`);
+    const res = await fetchApi(`${API_BASE}/shipments?trash=true`);
     return handleResponse<Shipment[]>(res);
   },
 
   async restoreShipment(trackingNumber: string): Promise<Shipment> {
-    const res = await fetch(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/restore`, {
+    const res = await fetchApi(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/restore`, {
       method: 'POST'
     });
     return handleResponse<Shipment>(res);
@@ -120,7 +179,7 @@ export const api = {
   // Permanent, irreversible delete — only ever called from the trash view on a shipment
   // that's already soft-deleted, as a deliberate separate action from the ordinary delete.
   async permanentlyDeleteShipment(trackingNumber: string): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/permanent`, {
+    const res = await fetchApi(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/permanent`, {
       method: 'DELETE'
     });
     return handleResponse<{ success: boolean; message: string }>(res);
@@ -129,12 +188,12 @@ export const api = {
   // Single fresh shipment, server-synced (unmasked, admin-only — never call this from a
   // public-facing page; use trackShipment there instead).
   async getShipment(trackingNumber: string): Promise<Shipment> {
-    const res = await fetch(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}`);
+    const res = await fetchApi(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}`);
     return handleResponse<Shipment>(res);
   },
 
   async createShipment(shipmentData: Partial<Shipment>): Promise<Shipment> {
-    const res = await fetch(`${API_BASE}/shipments`, {
+    const res = await fetchApi(`${API_BASE}/shipments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(shipmentData)
@@ -157,7 +216,7 @@ export const api = {
     estimatedDeliveryDate?: string,
     estimatedDeliveryTime?: string
   ): Promise<Shipment> {
-    const res = await fetch(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/status`, {
+    const res = await fetchApi(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ newStatus, location, facility, notes, progressPercent, statusText, lat, lng, eventTitle, skipEventCreation, estimatedDeliveryDate, estimatedDeliveryTime })
@@ -166,7 +225,7 @@ export const api = {
   },
 
   async updateShipment(trackingNumber: string, shipment: Partial<Shipment>): Promise<Shipment> {
-    const res = await fetch(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}`, {
+    const res = await fetchApi(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(shipment)
@@ -175,7 +234,7 @@ export const api = {
   },
 
   async addTrackingEvent(trackingNumber: string, event: Partial<TrackingEvent>): Promise<Shipment> {
-    const res = await fetch(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/events`, {
+    const res = await fetchApi(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/events`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(event)
@@ -184,7 +243,7 @@ export const api = {
   },
 
   async correctTrackingEvent(trackingNumber: string, eventId: string, updates: Partial<TrackingEvent>): Promise<Shipment> {
-    const res = await fetch(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/events/${encodeURIComponent(eventId)}`, {
+    const res = await fetchApi(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/events/${encodeURIComponent(eventId)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates)
@@ -194,7 +253,7 @@ export const api = {
 
   // Return to origin: the server creates the return as its own shipment with a new NGT ID.
   async initiateReturn(trackingNumber: string, reason: string, operator?: string): Promise<{ original: Shipment; returnShipment: Shipment }> {
-    const res = await fetch(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/return`, {
+    const res = await fetchApi(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/return`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason, operator })
@@ -203,28 +262,57 @@ export const api = {
   },
 
   async deleteShipment(trackingNumber: string): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}`, {
+    const res = await fetchApi(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}`, {
       method: 'DELETE'
     });
     return handleResponse<{ success: boolean; message: string }>(res);
   },
 
+  // Payment request per shipment (admin only). Accounts are typed per shipment (update D-9).
+  async getShipmentPayment(trackingNumber: string): Promise<ShipmentPayment | null> {
+    const res = await fetchApi(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/payment`);
+    return handleResponse<ShipmentPayment | null>(res);
+  },
+
+  async saveShipmentPayment(trackingNumber: string, request: PaymentRequestBody): Promise<ShipmentPayment> {
+    const res = await fetchApi(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/payment`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request)
+    });
+    return handleResponse<ShipmentPayment>(res);
+  },
+
+  async setShipmentPaymentStatus(trackingNumber: string, action: 'cancel' | 'mark_paid' | 'reopen'): Promise<ShipmentPayment> {
+    const res = await fetchApi(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/payment/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action })
+    });
+    return handleResponse<ShipmentPayment>(res);
+  },
+
+  async deleteShipmentPayment(trackingNumber: string): Promise<void> {
+    const res = await fetchApi(`${API_BASE}/shipments/${encodeURIComponent(trackingNumber)}/payment`, { method: 'DELETE' });
+    await handleResponse<null>(res);
+  },
+
   // Admin Quotes
   async getQuotes(): Promise<QuoteRequest[]> {
-    const res = await fetch(`${API_BASE}/quotes`);
+    const res = await fetchApi(`${API_BASE}/quotes`);
     return handleResponse<QuoteRequest[]>(res);
   },
 
   // Public: a single quote by its own ID (used by the "look up my quote" flow) — scoped to
   // one record instead of pulling every customer's quotes to find a match client-side.
   async getPublicQuote(id: string): Promise<QuoteRequest | null> {
-    const res = await fetch(`${API_BASE}/quotes/${encodeURIComponent(id)}`);
+    const res = await fetchApi(`${API_BASE}/quotes/${encodeURIComponent(id)}`);
     if (res.status === 404) return null;
     return handleResponse<QuoteRequest>(res);
   },
 
   async publishQuote(id: string, pricing: QuoteRequestPricing, internalNotes?: string): Promise<QuoteRequest> {
-    const res = await fetch(`${API_BASE}/quotes/${encodeURIComponent(id)}/publish`, {
+    const res = await fetchApi(`${API_BASE}/quotes/${encodeURIComponent(id)}/publish`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pricing, internalNotes })
@@ -233,7 +321,7 @@ export const api = {
   },
 
   async updateQuoteStatus(id: string, status: QuoteRequestStatus, validUntil?: string): Promise<QuoteRequest> {
-    const res = await fetch(`${API_BASE}/quotes/${encodeURIComponent(id)}/status`, {
+    const res = await fetchApi(`${API_BASE}/quotes/${encodeURIComponent(id)}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, validUntil })
@@ -242,7 +330,7 @@ export const api = {
   },
 
   async convertQuoteToShipment(id: string, shipment?: Partial<Shipment>): Promise<{ trackingNumber: string; data: Shipment }> {
-    const res = await fetch(`${API_BASE}/quotes/${encodeURIComponent(id)}/convert`, {
+    const res = await fetchApi(`${API_BASE}/quotes/${encodeURIComponent(id)}/convert`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(shipment || {})
@@ -260,12 +348,12 @@ export const api = {
     if (params?.docType) query.set('docType', params.docType);
     if (params?.status) query.set('status', params.status);
     if (params?.search) query.set('search', params.search);
-    const res = await fetch(`${API_BASE}/documents?${query.toString()}`);
+    const res = await fetchApi(`${API_BASE}/documents?${query.toString()}`);
     return handleResponse<AdminDocument[]>(res);
   },
 
   async generateDocument(docData: AdminDocument): Promise<AdminDocument> {
-    const res = await fetch(`${API_BASE}/documents/generate`, {
+    const res = await fetchApi(`${API_BASE}/documents/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(docData)
@@ -274,7 +362,7 @@ export const api = {
   },
 
   async regenerateDocument(id: string, notes?: string, refreshedFields?: Partial<AdminDocument>): Promise<AdminDocument> {
-    const res = await fetch(`${API_BASE}/documents/${encodeURIComponent(id)}/regenerate`, {
+    const res = await fetchApi(`${API_BASE}/documents/${encodeURIComponent(id)}/regenerate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ notes, ...refreshedFields })
@@ -283,7 +371,7 @@ export const api = {
   },
 
   async updateDocumentStatus(id: string, status: DocumentStatus): Promise<AdminDocument> {
-    const res = await fetch(`${API_BASE}/documents/${encodeURIComponent(id)}/status`, {
+    const res = await fetchApi(`${API_BASE}/documents/${encodeURIComponent(id)}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
@@ -292,7 +380,7 @@ export const api = {
   },
 
   async updateDocumentPaymentStatus(id: string, paymentStatus: 'PAID' | 'PENDING'): Promise<AdminDocument> {
-    const res = await fetch(`${API_BASE}/documents/${encodeURIComponent(id)}/payment-status`, {
+    const res = await fetchApi(`${API_BASE}/documents/${encodeURIComponent(id)}/payment-status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ paymentStatus })
@@ -301,7 +389,7 @@ export const api = {
   },
 
   async deleteDocument(id: string): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`${API_BASE}/documents/${encodeURIComponent(id)}`, {
+    const res = await fetchApi(`${API_BASE}/documents/${encodeURIComponent(id)}`, {
       method: 'DELETE'
     });
     return handleResponse<{ success: boolean; message: string }>(res);
@@ -309,12 +397,12 @@ export const api = {
 
   // Settings
   async getSettings(): Promise<AdminSettings> {
-    const res = await fetch(`${API_BASE}/settings`);
+    const res = await fetchApi(`${API_BASE}/settings`);
     return handleResponse<AdminSettings>(res);
   },
 
   async updateSettings(settings: Partial<AdminSettings>): Promise<AdminSettings> {
-    const res = await fetch(`${API_BASE}/settings`, {
+    const res = await fetchApi(`${API_BASE}/settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings)
@@ -324,7 +412,7 @@ export const api = {
 
   // Contact form (public submit) and the admin Messages inbox
   async submitContactMessage(message: Pick<ContactMessage, 'name' | 'email' | 'phone' | 'subject' | 'priority' | 'trackingNumber' | 'gatewayCode' | 'message'>): Promise<ContactMessage> {
-    const res = await fetch(`${API_BASE}/messages`, {
+    const res = await fetchApi(`${API_BASE}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(message)
@@ -333,12 +421,12 @@ export const api = {
   },
 
   async getContactMessages(): Promise<ContactMessage[]> {
-    const res = await fetch(`${API_BASE}/messages`, { credentials: 'include' });
+    const res = await fetchApi(`${API_BASE}/messages`, { credentials: 'include' });
     return handleResponse<ContactMessage[]>(res);
   },
 
   async updateContactMessageStatus(id: string, status: ContactMessageStatus): Promise<ContactMessage> {
-    const res = await fetch(`${API_BASE}/messages/${encodeURIComponent(id)}/status`, {
+    const res = await fetchApi(`${API_BASE}/messages/${encodeURIComponent(id)}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -349,7 +437,7 @@ export const api = {
 
   // Dashboard Stats
   async getStats(): Promise<any> {
-    const res = await fetch(`${API_BASE}/stats`);
+    const res = await fetchApi(`${API_BASE}/stats`, { credentials: 'include' });
     return handleResponse<any>(res);
   }
 };
