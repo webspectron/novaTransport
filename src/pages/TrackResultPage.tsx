@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import {
   Package,
   Calendar,
@@ -66,6 +66,9 @@ import { resolveLocation } from '../services/geocodingService';
 import { applyForwardOnlyShipmentUpdate } from '../utils/shipmentSync';
 import { useCompanyContact } from '../utils/useCompanyContact';
 import './TrackResultPage.css';
+
+// The payment section is only downloaded for shipments that have a payment request.
+const PaymentSection = lazy(() => import('../components/PaymentSection').then((m) => ({ default: m.PaymentSection })));
 
 interface TrackResultPageProps {
   shipment: Shipment;
@@ -801,6 +804,13 @@ export const TrackResultPage: React.FC<TrackResultPageProps> = ({
             transportMode={transportMode}
           />
         </section>
+
+        {/* Payment request (CONTENT.md §6.7); only when the shipment has one that isn't cancelled. */}
+        {liveShipment.payment && liveShipment.payment.status !== 'CANCELLED' && (
+          <Suspense fallback={null}>
+            <PaymentSection payment={liveShipment.payment} />
+          </Suspense>
+        )}
 
         {/* =========================================================================
             3. TWO-COLUMN MAIN CONTENT (LEFT: TIMELINE | RIGHT: VEHICLE & DETAILS)

@@ -386,6 +386,42 @@ The rest of the payment section (heading, status labels, proof form) is in §6.7
 - The admin's own **instructions** for an account appear at the bottom of its card, as written.
 - No gift cards and no mobile money (update D-1).
 
+### 6.7 Track Result: payment section (added 2026-10-13 with update D.1, **owner to confirm**)
+Source in code: `src/components/PaymentSection.tsx` (proof form: E.3). Shown only when the shipment has a payment
+request. Hidden completely when the request is cancelled.
+
+**Summary**
+- **Heading:** `Payment`
+- **Intro (awaiting payment):** `A payment is due for this shipment. Pay using any one of the accounts below, then send us your proof of payment.`
+- **Labels:** `Amount due` · `For` (the charge reason the admin wrote) · `Due by` (date, only when set) · `Note from our team` (the customer note, only when set)
+- **Status badges:** `Awaiting payment` · `Proof under review` · `Paid` · `Cancelled`
+
+**Payment accounts**
+- **Tab (closed by default):** title `How to pay` · sub `Choose one of {n} payment options` (one account: `1 payment option`). Opening it shows the line below and the accounts.
+- **Line inside the tab:** `Choose one account. You only need to pay once.`
+- **Mobile accordion (below 768 px):** each method name is a button; screen-reader state `Show details` / `Hide details`. One open at a time.
+- **QR code:** button `Show QR code` / `Hide QR code` · image alt `QR code for {method}` · caption `Scan with your wallet or camera app.` (as in §6.6)
+- **Copy toast (visible, 2 seconds):** `{field} copied` (same text as the screen-reader announcement in §6.6)
+
+**Paid**
+- **Heading line:** `Payment received`
+- **Text:** `Thank you. We received your payment on {date}.` · without a date: `Thank you. We have received your payment.`
+- Accounts stay behind the same tab, titled `Show payment accounts` / `Hide payment accounts`
+
+**Proof of payment (update E.3, E.4)**
+- **Tab (closed by default):** title `Send proof of payment` · sub `Already paid? Upload your receipt so we can confirm it.` Opening it shows the form.
+- **Intro:** `After paying, upload a screenshot or photo of the receipt so our team can confirm it.`
+- **Fields:** `Account you paid to` (placeholder `Choose an account`) · `Your name` (hint `The name the payment was sent from`) · `Amount sent` · `Payment reference (optional)` (hint `Transaction ID, MTCN or reference number`) · `Screenshot of the payment` (hint `JPG, PNG, WebP or HEIC. Only our team can see it.`)
+- **Buttons:** `Choose image` · `Change image` · `Remove image` · `Send proof` · while sending `Sending…`
+- **Field errors:** `Choose the account you paid to.` · `Enter the name the payment was sent from.` · `Enter the amount you sent.` · `Add a screenshot of the payment.` · `This file isn't an image. Upload a JPG, PNG, WebP or HEIC.` · `This image could not be read. Try another file or take a new screenshot.`
+- **Success:** `Thank you. Your proof of payment was sent. We'll check it and update this page.`
+- **Under review:** `Proof under review` · `We received your proof on {date} at {time}. Our team will check it and update this page.`
+- **Rejected:** `Proof not accepted: {reason}` · `Please check the details and send a new proof below.`
+- **Errors:** `We couldn't send your proof. Check your connection and try again.` · too many attempts: `Too many attempts. Please wait a while and try again.` · too many open proofs: `We already have proofs waiting for review for this payment. Our team will check them first.` · status changed: `This payment is no longer waiting for a proof. Refresh the page to see its current status.`
+
+**Tracking event when the admin approves a proof** (update F.3; optional, ticked by default, D-4)
+- Title `Payment confirmed` · description `Payment received for: {charge reason}.` · facility `Nuvexa Operations Centre` (as in §6.3)
+
 ---
 
 ## 7. Quote, Ship, Public Quote Result

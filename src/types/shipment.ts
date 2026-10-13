@@ -1,3 +1,4 @@
+import type { PublicPayment } from '../shared/paymentRequest.js';
 import type { TransportMode } from '../shared/transportMode.js';
 
 export type ShipmentStatus =
@@ -246,6 +247,8 @@ export interface Shipment {
     contentsDescription: string;
   };
   photos?: string[];
+  /** The shipment's payment request as the customer sees it (track response only; update D.2). */
+  payment?: PublicPayment | null;
   service: 'Express' | 'Standard' | 'Priority' | 'Freight LTL' | string;
   /** Main-leg transport mode; the server infers it for records created before it was stored. */
   transportMode?: TransportMode;

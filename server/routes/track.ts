@@ -3,6 +3,8 @@ import { db } from '../db.js';
 import { syncTimeBasedProgress, shipmentTransportMode } from '../progress.js';
 import { eventTimeDisplay } from '../../src/shared/timeZones.js';
 import { parseTrackingInput } from '../../src/shared/trackingId.js';
+import { getShipmentPayment } from './shipmentPayments.js';
+import { publicPaymentView } from '../../src/shared/paymentRequest.js';
 
 export const trackRouter = Router();
 
@@ -128,6 +130,8 @@ trackRouter.get('/:trackingNumber', (req: Request, res: Response) => {
       };
     }
 
+    const storedPayment = getShipmentPayment(row.tracking_number);
+
     const publicShipment = {
       trackingNumber: row.tracking_number,
       barcodeCode: row.barcode_code,
@@ -223,7 +227,11 @@ trackRouter.get('/:trackingNumber', (req: Request, res: Response) => {
           date: row.status === 'DELIVERED' ? (row.last_updated || 'Delivered') : 'Upon Delivery',
           fileSize: row.status === 'DELIVERED' ? '142 KB' : 'Pending'
         }
-      ]
+      ],
+      // The shipment's payment request (docs/update.md D.2): only its own accounts, in the admin's
+      // order, without internal fields such as the linked invoice. null when there is none.
+      // Phase E (E.1) adds the latest proof's status; until then `proof` is null.
+      payment: storedPayment ? publicPaymentView(storedPayment) : null
     };
 
     res.json({ success: true, data: publicShipment });

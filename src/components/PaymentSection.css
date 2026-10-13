@@ -1,0 +1,377 @@
+/* Track Result: Payment (CONTENT.md §6.7). */
+
+.ngt-pay-section {
+  margin-bottom: 2rem;
+}
+
+.ngt-pay-summary {
+  background: #ffffff;
+  border: 1px solid var(--ngt-slate-200);
+  border-radius: 14px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  padding: 1.25rem;
+  min-width: 0;
+}
+
+.ngt-pay-summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.ngt-pay-title {
+  margin: 0;
+}
+
+.ngt-pay-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--ngt-radius-full);
+  border: 1px solid transparent;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ngt-pay-badge.is-awaiting {
+  background: var(--ngt-warning-50);
+  border-color: var(--ngt-warning-200);
+  color: #92400e;
+}
+
+.ngt-pay-badge.is-review {
+  background: var(--ngt-info-50);
+  border-color: var(--ngt-info-200);
+  color: var(--ngt-info-700);
+}
+
+.ngt-pay-badge.is-paid {
+  background: var(--ngt-success-50);
+  border-color: var(--ngt-success-100);
+  color: var(--ngt-success-700);
+}
+
+.ngt-pay-badge.is-cancelled {
+  background: var(--ngt-slate-100);
+  border-color: var(--ngt-slate-200);
+  color: var(--ngt-slate-700);
+}
+
+.ngt-pay-intro {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ngt-slate-600);
+}
+
+.ngt-pay-facts {
+  margin: 1rem 0 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+@media (min-width: 768px) {
+  .ngt-pay-facts {
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr) minmax(0, auto);
+    gap: 1.5rem;
+    align-items: start;
+  }
+}
+
+.ngt-pay-fact dt {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ngt-slate-600);
+}
+
+.ngt-pay-fact dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--ngt-slate-900);
+  overflow-wrap: anywhere;
+}
+
+.ngt-pay-fact dd.ngt-pay-amount {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ngt-pay-note {
+  margin-top: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  background: var(--ngt-slate-50);
+  border: 1px solid var(--ngt-slate-200);
+}
+
+.ngt-pay-note strong {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ngt-slate-800);
+}
+
+.ngt-pay-note p {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--ngt-slate-700);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* Payment accounts: a grid on wider screens, an accordion on phones. */
+.ngt-pay-methods {
+  margin-top: 1.25rem;
+}
+
+.ngt-pay-methods-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--ngt-slate-900);
+}
+
+.ngt-pay-methods-sub {
+  margin: 0.25rem 0 0.85rem;
+  font-size: 0.88rem;
+  color: var(--ngt-slate-600);
+}
+
+.ngt-pay-methods-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.ngt-pay-methods-list > li {
+  min-width: 0;
+}
+
+.ngt-pay-methods-list.is-accordion {
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .ngt-pay-methods-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .ngt-pay-methods-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* "{field} copied" toast; also the screen-reader announcement. */
+.ngt-pay-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  z-index: 1000;
+  max-width: calc(100vw - 2rem);
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  background: var(--ngt-slate-900);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: var(--ngt-shadow-lg);
+  transform: translate(-50%, 0.5rem);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.ngt-pay-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ngt-pay-toast {
+    transition: none;
+  }
+}
+
+/* Paid (D.4): confirmation line, accounts collapsed behind the same tab. */
+.ngt-pay-received {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  background: var(--ngt-success-50);
+  border: 1px solid var(--ngt-success-100);
+  color: var(--ngt-success-700);
+}
+
+.ngt-pay-received svg {
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+.ngt-pay-received strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.ngt-pay-received p {
+  margin: 0.15rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ngt-slate-700);
+}
+
+/* Tabs for the accounts (D.3) and the proof form (E.3): slate card, brand-red accent. */
+.ngt-pay-proof {
+  margin-top: 1rem;
+}
+
+.ngt-pay-tab {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid var(--ngt-slate-200);
+  border-radius: 14px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  min-width: 0;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ngt-pay-tab::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--ngt-accent-500);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ngt-pay-tab.is-open {
+  border-color: var(--ngt-slate-300);
+  box-shadow: 0 8px 28px -6px rgba(24, 24, 24, 0.12);
+}
+
+.ngt-pay-tab.is-open::before,
+.ngt-pay-tab:hover::before {
+  opacity: 1;
+}
+
+.ngt-pay-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--ngt-ink-900);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ngt-pay-tab-btn:hover {
+  background: var(--ngt-slate-50);
+}
+
+.ngt-pay-tab-btn:focus-visible {
+  outline: 2px solid var(--ngt-color-focus);
+  outline-offset: -2px;
+}
+
+.ngt-pay-tab-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--ngt-accent-50);
+  color: var(--ngt-accent-500);
+}
+
+.ngt-pay-tab.is-open .ngt-pay-tab-icon {
+  background: var(--ngt-accent-500);
+  color: #ffffff;
+}
+
+.ngt-pay-tab-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.ngt-pay-tab-text strong {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--ngt-ink-900);
+}
+
+.ngt-pay-tab-text small {
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: var(--ngt-slate-600);
+}
+
+.ngt-pay-tab-chevron {
+  flex-shrink: 0;
+  color: var(--ngt-slate-500);
+  transition: transform 0.2s ease;
+}
+
+.ngt-pay-tab.is-open .ngt-pay-tab-chevron {
+  transform: rotate(180deg);
+  color: var(--ngt-accent-500);
+}
+
+.ngt-pay-tab-panel {
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--ngt-slate-100);
+}
+
+.ngt-pay-tab-panel > .ngt-pay-methods-sub:first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 599px) {
+  .ngt-pay-tab-btn {
+    padding: 0.9rem 1rem;
+    gap: 0.7rem;
+  }
+
+  .ngt-pay-tab-panel {
+    padding: 0.9rem 1rem 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ngt-pay-tab,
+  .ngt-pay-tab::before,
+  .ngt-pay-tab-chevron {
+    transition: none;
+  }
+}
