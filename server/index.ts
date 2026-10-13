@@ -7,6 +7,7 @@ import path from 'path';
 import fs from 'fs';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { initDatabase, dataDir, dbPath } from './db.js';
+import { ensureUploadDirs, uploadsDir } from './uploads.js';
 import { COMPANY } from '../src/config/brand.js';
 import { shipmentsRouter } from './routes/shipments.js';
 import { quotesRouter } from './routes/quotes.js';
@@ -42,6 +43,7 @@ app.set('trust proxy', 1);
 if (!ADMIN_PROXY_TARGET) {
   // Initialize Persistent SQLite Database
   initDatabase();
+  ensureUploadDirs();
 }
 
 // Middleware
@@ -253,6 +255,7 @@ app.listen(PORT, () => {
     console.log(`🔀 Admin-proxy mode — /api forwards to ${ADMIN_PROXY_TARGET}`);
   } else {
     console.log(`📦 Database: ${dbPath} (Persistent SQLite)`);
+    console.log(`🖼️  Uploads: ${uploadsDir}`);
     console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
   }
   console.log(`====================================================`);

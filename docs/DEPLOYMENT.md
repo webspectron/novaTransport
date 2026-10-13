@@ -62,6 +62,7 @@ ADMIN_PASSWORD_HASH=<bcrypt hash of the NEW Nuvexa admin password>
 SESSION_SECRET=<NEW 64 hex chars>
 SEED_DEMO_DATA=false
 DB_PATH=/home/<hostinger-user>/nuvexa-data/ngt.db   # a folder OUTSIDE the app/deploy directory
+UPLOADS_DIR=/home/<hostinger-user>/nuvexa-data/uploads   # payment-proof screenshots, same persistent folder
 ```
 
 **New admin password.** The owner picks it and runs this locally in the project folder (it needs `bcryptjs` from
@@ -78,6 +79,11 @@ Paste the outputs into `ADMIN_PASSWORD_HASH` and `SESSION_SECRET`. **Never reuse
 only if the panel doesn't. Leave `ADMIN_PROXY_TARGET` **unset**: the admin console is part of the same app.
 Leave `ADMIN_PATH` **unset** too: the console stays at the default `/private-user/` (owner, 2026-10-06; see §5).
 Setting it later moves the console to another path without a code change.
+
+**Uploads folder:** `UPLOADS_DIR` holds payment-proof screenshots in a `proofs/` subfolder (private, served only
+through an admin-only route). The server creates it on start. When unset it defaults to an `uploads` folder next to
+the database. Like `DB_PATH`, it **must** point outside the deploy directory. The startup log (hPanel → app logs)
+prints the database path and the uploads path in use.
 
 **Database.** Nuvexa starts with a **fresh** `ngt.db`; nothing is migrated from the previous client. The server
 creates the schema on first start.
@@ -130,7 +136,8 @@ not a subdomain, so the whole site is **one** Hostinger Node app and needs no ex
 
 ## 8. After launch
 
-- **Backups:** copy `ngt.db` daily to off-server storage; test a restore once.
+- **Backups:** copy `ngt.db` **and the `UPLOADS_DIR` folder** (both in `nuvexa-data/`) daily to off-server storage;
+  test a restore once. The uploads hold customers' payment screenshots (personal data): keep the copies private.
 - **Updates:** push to `main` → Hostinger redeploys.
 - **Monitoring:** a free uptime monitor on `/api/health` (5-minute interval) with alerts to {{EMAIL}}.
 - **Security:** rotate `ADMIN_PASSWORD_HASH` and `SESSION_SECRET` if anyone with access leaves; `npm audit` monthly.
