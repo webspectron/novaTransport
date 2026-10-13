@@ -1,6 +1,7 @@
 import { Shipment, ShipmentStatus, TrackingEvent } from '../types/shipment';
 import { QuoteRequest, QuoteRequestPricing, QuoteRequestStatus, AdminSettings, AdminDocument, DocumentStatus, ContactMessage, ContactMessageStatus } from '../types/admin';
 import type { ShipmentPayment } from '../shared/paymentRequest';
+import type { AdminPaymentProof, ProofStatus } from '../shared/paymentProof';
 
 /** Body for PUT /api/shipments/:id/payment (validated by validatePaymentRequest on the server). */
 export interface PaymentRequestBody {
@@ -310,6 +311,31 @@ export const api = {
       body: JSON.stringify({ action })
     });
     return handleResponse<ShipmentPayment>(res);
+  },
+
+  // Proofs of payment (admin Payments page, update F.1, F.2). Screenshots load from each proof's fileUrl.
+  async getPaymentProofs(status?: ProofStatus): Promise<AdminPaymentProof[]> {
+    const res = await fetchApi(`${API_BASE}/payments/proofs${status ? `?status=${status}` : ''}`);
+    return handleResponse<AdminPaymentProof[]>(res);
+  },
+
+  // Review (update F.3). Approving marks the request and its linked invoice paid.
+  async approvePaymentProof(id: string, addTrackingEvent: boolean): Promise<AdminPaymentProof> {
+    const res = await fetchApi(`${API_BASE}/payments/proofs/${encodeURIComponent(id)}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ addTrackingEvent })
+    });
+    return handleResponse<AdminPaymentProof>(res);
+  },
+
+  async rejectPaymentProof(id: string, reason: string): Promise<AdminPaymentProof> {
+    const res = await fetchApi(`${API_BASE}/payments/proofs/${encodeURIComponent(id)}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
+    });
+    return handleResponse<AdminPaymentProof>(res);
   },
 
   async deleteShipmentPayment(trackingNumber: string): Promise<void> {

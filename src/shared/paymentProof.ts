@@ -61,3 +61,24 @@ export interface PublicProofStatus {
   /** Only for REJECTED: the reason the admin gave. */
   rejectionReason: string | null;
 }
+
+/** A proof as the admin Payments page lists it (F.2). */
+export interface AdminPaymentProof {
+  id: string;
+  paymentId: string;
+  trackingNumber: string;
+  methodId: string | null;
+  /** The account as it was when the customer used it. */
+  method: { type: string; label: string | null; details: Record<string, string> } | null;
+  payerName: string;
+  amountSent: number | null;
+  reference: string | null;
+  status: ProofStatus;
+  adminNote: string | null;
+  createdAt: string;
+  reviewedAt: string | null;
+  /** Admin-only URL of the screenshot. */
+  fileUrl: string;
+  /** The request this proof is for, as it is now (null if it was deleted). */
+  payment: { amount: number; currency: string; chargeReason: string; status: string } | null;
+}

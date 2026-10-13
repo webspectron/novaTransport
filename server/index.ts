@@ -16,7 +16,7 @@ import { documentsRouter } from './routes/documents.js';
 import { settingsRouter } from './routes/settings.js';
 import { trackRouter } from './routes/track.js';
 import { trackProofRouter } from './routes/trackProof.js';
-import { recoverProofUploads } from './routes/paymentProofs.js';
+import { paymentsRouter, recoverProofUploads } from './routes/paymentProofs.js';
 import { statsRouter } from './routes/stats.js';
 import { authRouter } from './routes/auth.js';
 import { messagesRouter } from './routes/messages.js';
@@ -203,6 +203,8 @@ if (ADMIN_PROXY_TARGET) {
   // Contact form: POST is public (rate-limited); list and status changes are gated per-route.
   app.use('/api/messages', messagesRouter);
   app.use('/api/stats', requireAdminAuth, statsRouter);
+  // Admin Payments page: proofs of payment and their private screenshots (update F.1-F.3).
+  app.use('/api/payments', requireAdminAuth, paymentsRouter);
 
   // 404 for anything under /api that didn't match a route above.
   app.use('/api', (req: Request, res: Response) => {

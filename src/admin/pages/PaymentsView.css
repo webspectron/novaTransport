@@ -1,0 +1,244 @@
+/* Admin Payments page: proofs of payment from the track page (update F.2). */
+
+.ngt-payments-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.payments-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.payments-filters {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.payments-filter-btn,
+.payments-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: var(--ngt-white);
+  border: 1px solid var(--ngt-slate-200);
+  border-radius: 9999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ngt-slate-600);
+  cursor: pointer;
+  transition: var(--ngt-transition);
+}
+
+.payments-filter-btn span {
+  font-size: 0.6875rem;
+  color: var(--ngt-slate-500);
+}
+
+.payments-filter-btn.active {
+  background: var(--ngt-ink-900);
+  border-color: var(--ngt-ink-900);
+  color: var(--ngt-white);
+}
+
+.payments-filter-btn.active span {
+  color: var(--ngt-slate-300);
+}
+
+.payments-refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.payments-refresh-btn .spin {
+  animation: payments-spin 1s linear infinite;
+}
+
+@keyframes payments-spin {
+  to { transform: rotate(360deg); }
+}
+
+.payments-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--ngt-danger-50);
+  color: var(--ngt-danger-600);
+  border: 1px solid var(--ngt-danger-100);
+  border-radius: var(--ngt-radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+}
+
+.payments-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--ngt-slate-500);
+  background: var(--ngt-white);
+  border: 1px dashed var(--ngt-slate-300);
+  border-radius: var(--ngt-radius-lg);
+}
+
+.payments-empty strong {
+  color: var(--ngt-slate-800);
+}
+
+.payments-empty p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.payments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.proof-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--ngt-white);
+  border: 1px solid var(--ngt-slate-200);
+  border-left: 4px solid var(--ngt-slate-300);
+  border-radius: var(--ngt-radius-lg);
+  min-width: 0;
+}
+
+.proof-card.status-submitted { border-left-color: var(--ngt-info-500); }
+.proof-card.status-approved { border-left-color: var(--ngt-success-500); }
+.proof-card.status-rejected { border-left-color: var(--ngt-danger-500); }
+
+.proof-thumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 112px;
+  height: 112px;
+  padding: 0;
+  border: 1px solid var(--ngt-slate-200);
+  border-radius: var(--ngt-radius-md);
+  background: var(--ngt-slate-100);
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.proof-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.proof-thumb-zoom {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.7);
+  color: var(--ngt-white);
+}
+
+.proof-thumb:focus-visible,
+.proof-action:focus-visible {
+  outline: 2px solid var(--ngt-color-focus);
+  outline-offset: 2px;
+}
+
+.proof-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.proof-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+}
+
+.proof-head strong {
+  font-size: 0.95rem;
+  color: var(--ngt-slate-900);
+}
+
+.proof-badge {
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.proof-badge.submitted { background: var(--ngt-info-50); color: var(--ngt-info-700); }
+.proof-badge.approved { background: var(--ngt-success-50); color: var(--ngt-success-700); }
+.proof-badge.rejected { background: var(--ngt-danger-50); color: var(--ngt-danger-600); }
+
+.proof-request-status {
+  font-size: 0.75rem;
+  color: var(--ngt-slate-600);
+}
+
+.proof-time {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--ngt-slate-500);
+}
+
+/* .proof-facts and .proof-note live in components/ProofFacts.css (update G.2). */
+
+.proof-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.proof-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--ngt-slate-200);
+  border-radius: var(--ngt-radius-md);
+  background: var(--ngt-white);
+  color: var(--ngt-slate-700);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.proof-action:hover:not(:disabled) {
+  background: var(--ngt-slate-50);
+}
+
+.proof-action:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 600px) {
+  .proof-card {
+    flex-direction: column;
+  }
+
+  .proof-thumb {
+    width: 100%;
+    height: 180px;
+  }
+
+  .proof-time {
+    margin-left: 0;
+    width: 100%;
+  }
+}
