@@ -351,6 +351,40 @@ Rotating lines: `Locating your shipment…` · `Checking the latest scans…` ·
 - Admin quick action (records a scan at a hub; shown publicly as In transit): `Hub scan`
 - Older status codes are shown as: Exception → On hold · Delivery attempted → Delayed · At facility (intermediate hub) → In transit · Created / Awaiting pickup → Booked · Cancelled → `Cancelled`
 
+### 6.6 Payment methods: names, field labels, buttons, warnings (added 2026-10-13 with update B.1, **owner to confirm**)
+Source of truth in code: `src/shared/paymentMethods.ts`. The admin can override a method's display name per account.
+The rest of the payment section (heading, status labels, proof form) is in §6.7.
+
+| Method name | Fields shown to the customer (each with a Copy button) | Button / extra |
+|---|---|---|
+| `PayPal` | `PayPal email` · `Account name` | `Open PayPal` (when a PayPal.Me link is set) + QR |
+| `Bitcoin (BTC)` | `Network` · `Wallet address` | QR + network warning |
+| `USDT (Tether)` | `Network` · `Wallet address` | QR + network warning |
+| `Ethereum (ETH)` | `Network` · `Wallet address` | QR + network warning |
+| `Zelle` | `Zelle email` · `Zelle phone (US)` · `Recipient name` | |
+| `Cash App` | `$Cashtag` · `Name` | `Open Cash App` |
+| `Venmo` | `Venmo username` · `Name` | `Open Venmo` |
+| `Apple Pay / Apple Cash` | `Phone` · `Email` · `Name` | |
+| `Google Pay` | `Phone` · `Email` · `Name` | |
+| `US bank transfer (ACH / wire)` | `Account name` · `Bank` · `Routing number` · `Account number` · `Account type` · `Bank address` | |
+| `UK bank transfer (Faster Payments)` | `Account name` · `Bank` · `Sort code` · `Account number` | |
+| `International wire (SWIFT / IBAN)` | `Beneficiary` · `Bank` · `IBAN` · `Account number` · `SWIFT/BIC` · `Bank address` · `Bank country` | |
+| `Wise` | `Wise email` · `Wisetag` · `Name` | |
+| `Revolut` | `Revtag` · `Phone` · `Name` | |
+| `Card payment link` | (none) | `Pay by card` + QR |
+| `Western Union` | `Receiver full name` · `Country` · `City` | note below |
+| `MoneyGram` | `Receiver full name` · `Country` · `City` | note below |
+
+- **Crypto networks offered to the admin:** Bitcoin: `Bitcoin` · `Lightning`. USDT: `TRC20 (Tron)` · `ERC20 (Ethereum)` · `BEP20 (BNB Smart Chain)` · `Polygon` · `Solana`. Ethereum: `Ethereum (mainnet)` · `Arbitrum` · `Optimism` · `Base` · `Polygon`.
+- **Crypto network warning:** `Send only {coin} on the {network} network. Funds sent on another network can be lost.`
+- **Western Union note:** `After sending, enter the MTCN (money transfer control number) as your payment reference.`
+- **MoneyGram note:** `After sending, enter the MoneyGram reference number as your payment reference.`
+- **Admin example placeholders** use the short name: `$NuvexaPay` (Cash App), `@nuvexa-pay` (Venmo), `@nuvexa` (Wisetag, Revtag).
+- Optional fields the admin leaves empty are not shown.
+- **Copy buttons:** `Copy` → `Copied` (2 seconds) · screen-reader announcement `{field} copied` · if the browser blocks copying: `Could not copy. Select the {field} and copy it manually.`
+- The admin's own **instructions** for an account appear at the bottom of its card, as written.
+- No gift cards and no mobile money (update D-1).
+
 ---
 
 ## 7. Quote, Ship, Public Quote Result
