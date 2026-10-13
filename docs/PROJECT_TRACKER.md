@@ -79,6 +79,7 @@
 | 15 | ~~Drawer email overflow~~ **Resolved 2026-10-04: drawer button text reduced to 0.75rem** | 4.3 |
 | 16 | Gateways: owner asked for Asia + USA gateways (2026-10-04), then to keep Africa but list it last. Picked Seoul (ICN), Tokyo (NRT), Chicago (ORD), Miami (MIA) and new lanes; confirm or swap the cities | Home, Network |
 | 17 | ~~Final yes for the force-push~~ **Done 2026-10-06** (`ea885fd`, see Change log). Still open: remove remotes `origin` + `sdl`. Also: keep or trim the SDL mentions in CLAUDE.md / PROMPTS.md / docs/*.md before pushing? | 7.1 |
+| 18 | Found in the payments QA (2026-10-13), **pre-existing**, same on the build before the update: on a public Track Result page the hash effect in `src/App.tsx` re-runs every render (`getShipment` is a new function each time, `currentShipment` changes after each fetch) and re-fetches `GET /api/track/:id` in a loop (~35 req/s per open tab in headless Chrome). Fix as its own commit, or leave? | Server load, Track Result |
 
 ## Decisions log
 | Date | Decision |
@@ -116,6 +117,7 @@
 | 2026-10-06 | 7.4 | Owner: keep `/private-user/` as the live admin path (no random `ADMIN_PATH`; simpler to run). Random-path docs from `e8724b5` reverted; `ADMIN_PATH` stays unset in hPanel. |
 | 2026-10-06 | 7.1 | Owner go-ahead: `nuvexa-main` pushed to `webspectron/novaTransport` `main` (fast-forward `7e48f8b..ea885fd`) and force-pushed to `ojrandy/nuvexaglobaltransport` `main` (replaced SDL history `8161ae7`, `--force-with-lease`). Both at `ea885fd`. |
 | 2026-10-08 | 7.4 | Owner: Smartsupp live chat re-added (key `87d8…75c1`) at the end of `index.html` `<body>`; skipped when the server marks the page `<meta name="admin-console">`, so it never loads on `/private-user/`. CSP is off in helmet, so no header change. |
+| 2026-10-13 | Payments update | Branch `payments-update` (not on `main`; D-8 in `docs/update.md`): per-shipment payment requests (17 method types, USD/GBP/EUR), public payment section + proof-of-payment upload on Track Result, admin Payments page with approve/reject, badge/bell/toast/dashboard card. Two new tables (`shipment_payments`, `payment_proofs`) + `rate_limit_hits`; no existing table or column changed. QA H.1–H.4 on the built app with a scratch DB + uploads folder: §1 flow 43/43 at 1440 and 375, security 78/78, regression 61/61 HTTP + 33/33 browser (public pages pixel-identical to the pre-update build), build 0 errors, tests 62/62, sweeps 0 new hits. Details: `docs/update.md` §11. Deploy (H.5) waits for the owner. Needs owner 18 found during QA (pre-existing). |
 
 ---
 
@@ -148,6 +150,12 @@ Every restart or redeploy logs everyone out.
 
 **Images.** `scripts/optimize-images.mjs` reads originals from `images/`, writes `Public/brand/*`, the responsive photos
 and the manifest `<ResponsiveImage>` reads. Card photos are square-cropped (340 px base) so rows line up.
+
+**Payments (update 2026-10-13, `docs/update.md`).** A shipment can carry one payment request (`shipment_payments`; amount, USD/GBP/EUR, reason, 1–10 accounts typed per shipment, status `AWAITING_PAYMENT → UNDER_REVIEW → PAID` or `CANCELLED`). Admin routes `…/api/shipments/:id/payment` and `/api/payments/*` are behind `requireAdminAuth`; `GET /api/track/:id` adds a `payment` block with only that shipment's accounts and the latest proof's status (+ rejection reason). Customers upload proofs at `POST /api/track/:id/payment-proof` (5/hour/IP, counted in SQLite `rate_limit_hits`, so restarts don't reset it). Nothing payment-related is stored in `settings`. The public booking `POST /api/shipments` ignores payment fields.
+
+**Uploads (`UPLOADS_DIR`).** Proof screenshots live in `UPLOADS_DIR/proofs/` as `<uuid>.png|jpg|webp`. `UPLOADS_DIR` defaults to `uploads/` next to the DB (`data/uploads` locally). On Hostinger it must point to a persistent folder outside the deploy dir (beside `DB_PATH`) and be in backups. Files are checked by magic bytes (JPG/PNG/WebP only, 2 MB cap), written as `.part` and renamed after the row commits; `recoverProofUploads()` tidies up on start.
+
+**Proofs are private.** No static route serves `UPLOADS_DIR`. The only way to a file is `GET /api/payments/proofs/:id/file` with an admin session (`private, no-store`, `nosniff`); ids resolve only through `resolveUploadPath()`. Deleting a request or permanently deleting its shipment removes the proof rows and files; trash/restore keep them.
 
 **Fragile / worth knowing**
 - `/api/diag/storage` is admin-only; use it once on Hostinger to confirm persistence, then remove it.
