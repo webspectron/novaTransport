@@ -382,6 +382,7 @@ The rest of the payment section (heading, status labels, proof form) is in §6.7
 - **Admin example placeholders** use the short name: `$NuvexaPay` (Cash App), `@nuvexa-pay` (Venmo), `@nuvexa` (Wisetag, Revtag).
 - Optional fields the admin leaves empty are not shown.
 - **Copy buttons:** `Copy` → `Copied` (2 seconds) · screen-reader announcement `{field} copied` · if the browser blocks copying: `Could not copy. Select the {field} and copy it manually.`
+- **QR code:** button `Show QR code` / `Hide QR code` · image alt `QR code for {method}` · caption `Scan with your wallet or camera app.`
 - The admin's own **instructions** for an account appear at the bottom of its card, as written.
 - No gift cards and no mobile money (update D-1).
 

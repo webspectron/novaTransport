@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, ArrowRight, Save, Building, User, Package, Calendar, MapPin } from 'lucide-react';
 import { Shipment } from '../../types/shipment';
 import { resolveLocation } from '../../services/geocodingService';
+import { ShipmentPaymentPanel } from './ShipmentPaymentPanel';
 import './EditShipmentModal.css';
 import { COMPANY_SHORT } from '../../config/brand';
 
@@ -848,6 +849,9 @@ export const EditShipmentModal: React.FC<EditShipmentModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Payment request with this shipment's own accounts (update.md C.4); saved on its own. */}
+          <ShipmentPaymentPanel trackingNumber={shipment.trackingNumber} />
 
           {/* Footer Actions */}
           <div className="edit-modal-footer">

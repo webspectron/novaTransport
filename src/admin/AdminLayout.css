@@ -986,3 +986,41 @@
   text-transform: uppercase;
   color: #cbd5e1;
 }
+
+/* A panel that couldn't load its data, with "Try again" (update.md C.4). */
+.ngt-load-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--ngt-danger-100);
+  border-radius: 8px;
+  background: var(--ngt-danger-50);
+}
+
+.ngt-load-error p {
+  margin: 0;
+}
+
+.ngt-load-retry {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--ngt-danger-600);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--ngt-danger-600);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ngt-load-retry:hover {
+  background: var(--ngt-danger-600);
+  color: #ffffff;
+}
+
+.ngt-load-retry:focus-visible {
+  outline: 2px solid var(--ngt-color-focus);
+  outline-offset: 2px;
+}
