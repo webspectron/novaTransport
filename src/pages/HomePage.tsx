@@ -68,14 +68,14 @@ const SERVICES: { title: string; body: string; cta: string; image: SiteImageName
     body: 'Cars, motorcycles and fleet vehicles moved by container, RoRo or enclosed carrier, with documentation handled end to end.',
     cta: 'Explore Vehicle Shipping',
     image: 'service-vehicle-transport',
-    alt: 'Two cars strapped onto the ramps of a car transporter'
+    alt: 'Cargo ship guided into port by tugboats'
   },
   {
     title: 'Secure Vault & High-Value',
     body: 'Sealed, tamper-evident transport for valuables, sensitive documents, pharmaceuticals and high-value electronics, with restricted hand-offs.',
     cta: 'Explore Secure Vault',
     image: 'service-secure-vault',
-    alt: 'Round steel vault door with its ring of locking bolts'
+    alt: 'A sealed parcel passed from one pair of hands to another'
   }
 ];
 
@@ -87,7 +87,7 @@ const INDUSTRIES: { id: IndustryTab; icon: React.ReactNode; title: string; body:
     body: 'Spare parts, components and complete vehicles, moved to keep production lines and dealerships running.',
     bullets: ['Line-side parts express', 'Vehicle export & import documentation', 'Enclosed and container shipping'],
     image: 'industry-automotive',
-    alt: 'Robotic arms working on a car body on an assembly line'
+    alt: 'Warehouse aisle with racks of boxed parts and components'
   },
   {
     id: 'medical',
@@ -96,7 +96,7 @@ const INDUSTRIES: { id: IndustryTab; icon: React.ReactNode; title: string; body:
     body: 'Samples, medical devices and pharmaceuticals handled with care, controlled hand-offs and full traceability.',
     bullets: ['Temperature-sensitive handling (on request)', 'Sealed chain of custody', 'Priority customs lodgement'],
     image: 'industry-healthcare',
-    alt: 'Blister packs of tablets and capsules'
+    alt: 'Courier scanning the barcode label on a parcel with a phone'
   },
   {
     id: 'ecommerce',
@@ -114,7 +114,7 @@ const INDUSTRIES: { id: IndustryTab; icon: React.ReactNode; title: string; body:
     body: 'High-value hardware and components moved securely, on time and fully insured on request.',
     bullets: ['Secure vault option', 'Anti-static, protected packing guidance', 'Signature-only release'],
     image: 'industry-technology',
-    alt: 'Close-up of a circuit board with processors and components'
+    alt: 'Warehouse worker scanning stock with a handheld scanner'
   }
 ];
 

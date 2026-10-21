@@ -268,7 +268,7 @@ Remove the invented client logos. Replace with an icon row: **Air Freight · Oce
 - **Hero eyebrow:** `ABOUT Nuvexa` · **H1:** `Moving what matters, with nothing hidden.`
 - **Sub:** `Nuvexa Global Transport connects businesses and people to the world with express, freight and secure transport, and with the one thing logistics often forgets: accountability.`
 
-- **Hero image:** `about-hero` (12:5 crop of `images/unsplash/about-hero.jpg`). The credentials row shows only the admin "regulatory line" when it is set.
+- **Hero image:** `about-hero` (12:5 crop of `images/free-pexels/about-hero.jpg`). The credentials row shows only the admin "regulatory line" when it is set.
 
 **Stat cards** (reuse approved stats; no invented figures): **24/7** "Global operations desk" · `Our desk follows the sun across time zones.` — **1** "Tracking ID from start to finish" · `One team accountable from the first mile to the last.` — **5** "Continents served" · `Gateways across the Americas, Europe, the Middle East, Asia, Oceania and Africa.` — **Air · Ocean · Road** "Modes connected" · `Air, ocean and road, connected.`
 
@@ -561,16 +561,16 @@ are deleted. Four Pexels photos stay (`images/free-pexels/SOURCES.md`).
 | hero-home / hero-home-mobile | images/unsplash/hero-home.jpg (16:9 / 9:16) | Gantry cranes lining both quays of a container port at sunset, with cargo ships berthed along the water |
 | callback-banner | images/unsplash/callback-banner.jpg (3:1 crop) | (decorative background behind the callback form, empty alt) |
 | services-hero | images/unsplash/services-hero.jpg (12:5) | Tall pallet racks stacked with wrapped cartons under strip lights in a warehouse |
-| about-hero | images/unsplash/about-hero.jpg (12:5) | Aerial view of a highway interchange at dusk, with light trails on the ramps |
+| about-hero | images/free-pexels/about-hero.jpg (12:5) | Courier carrying a parcel from a delivery van to the door |
 | track-hero | images/unsplash/track-hero.jpg (2:1) | Aerial view of a container ship under way, its wake spreading across blue-green water |
 | locations-hero | images/unsplash/locations-hero.jpg (2:1) | Aerial view of a container terminal with a ship berthed under blue gantry cranes |
 | service-priority-express | images/free-pexels/service-priority-express.jpg | Ground crew raising a cargo pallet to the hold door of a wide-body aircraft |
 | service-freight-linehaul | images/unsplash/service-freight-linehaul.jpg | Semi-trailer trucks driving along a mountain highway |
-| service-vehicle-transport | images/unsplash/service-vehicle-transport.jpg | Two cars strapped onto the ramps of a car transporter |
-| service-secure-vault | images/unsplash/service-secure-vault.jpg | Round steel vault door with its ring of locking bolts |
-| industry-healthcare | images/unsplash/industry-healthcare.jpg | Blister packs of tablets and capsules |
-| industry-technology | images/unsplash/industry-technology.jpg | Close-up of a circuit board with processors and components |
-| industry-automotive | images/unsplash/industry-automotive.jpg | Robotic arms working on a car body on an assembly line |
+| service-vehicle-transport | images/free-pexels/service-vehicle-transport.jpg | Cargo ship guided into port by tugboats |
+| service-secure-vault | images/free-pexels/service-secure-vault.jpg | A sealed parcel passed from one pair of hands to another |
+| industry-healthcare | images/free-pexels/industry-healthcare.jpg | Courier scanning the barcode label on a parcel with a phone |
+| industry-technology | images/free-pexels/industry-technology.jpg | Warehouse worker scanning stock with a handheld scanner |
+| industry-automotive | images/free-pexels/industry-automotive.jpg | Warehouse aisle with racks of boxed parts and components |
 | industry-ecommerce | images/unsplash/industry-ecommerce.jpg | Person taping up a cardboard parcel at a packing table |
 | track-result-vehicle | images/free-pexels/service-priority-express.jpg | Ground crew raising a cargo pallet to the hold door of a wide-body aircraft |
 | about-operations | images/free-pexels/about-operations.jpg | Warehouse staff member checking stock on a tablet between loaded pallet racks |

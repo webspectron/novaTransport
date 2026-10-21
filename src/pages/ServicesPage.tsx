@@ -128,7 +128,7 @@ const INDUSTRIES: { id: string; title: string; icon: React.ReactNode; desc: stri
     desc: 'Controlled hand-offs, priority customs lodgement and temperature-sensitive handling on request.',
     bullets: ['Temperature-sensitive handling (on request)', 'Sealed chain of custody', 'Priority customs lodgement'],
     image: 'industry-healthcare',
-    alt: 'Blister packs of tablets and capsules'
+    alt: 'Courier scanning the barcode label on a parcel with a phone'
   },
   {
     id: 'technology',
@@ -137,7 +137,7 @@ const INDUSTRIES: { id: string; title: string; icon: React.ReactNode; desc: stri
     desc: 'Secure vault options, protected packing guidance and signature-only release.',
     bullets: ['Secure vault option', 'Anti-static, protected packing guidance', 'Signature-only release'],
     image: 'industry-technology',
-    alt: 'Close-up of a circuit board with processors and components'
+    alt: 'Warehouse worker scanning stock with a handheld scanner'
   },
   {
     id: 'automotive',
@@ -146,7 +146,7 @@ const INDUSTRIES: { id: string; title: string; icon: React.ReactNode; desc: stri
     desc: 'Parts express to keep lines moving, plus complete vehicle shipping.',
     bullets: ['Line-side parts express', 'Vehicle export & import documentation', 'Enclosed and container shipping'],
     image: 'industry-automotive',
-    alt: 'Robotic arms working on a car body on an assembly line'
+    alt: 'Warehouse aisle with racks of boxed parts and components'
   },
   {
     id: 'commercial',

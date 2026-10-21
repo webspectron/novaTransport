@@ -12,15 +12,9 @@ site uses. Card photos are centre-cropped to a square, which leaves out the robo
 | File | Source page | Photographer |
 |---|---|---|
 | hero-home.jpg | https://unsplash.com/photos/YTh-Yu_BEXw | foto-k |
-| about-hero.jpg | https://unsplash.com/photos/ieUq8n71iOQ | Joseph Clapp |
 | track-hero.jpg | https://unsplash.com/photos/FPKnAO-CF6M | Venti Views |
 | locations-hero.jpg | https://unsplash.com/photos/a-E__y8y5Wo | Alex Duffy |
 | callback-banner.jpg | https://unsplash.com/photos/1cqIcrWFQBI | Venti Views |
 | services-hero.jpg | https://unsplash.com/photos/BNBA1h-NgdY | CHUTTERSNAP |
 | service-freight-linehaul.jpg | https://unsplash.com/photos/P0bVatS8Jdw | Bhargav Panchal |
-| service-vehicle-transport.jpg | https://unsplash.com/photos/vvnZdwe80EE | Nadja Thoner |
-| service-secure-vault.jpg | https://unsplash.com/photos/1AucbckEJWk | Alex Duffy |
-| industry-healthcare.jpg | https://unsplash.com/photos/jwWtZrm67VI | Christine Sandu |
-| industry-technology.jpg | https://unsplash.com/photos/FO7JIlwjOtU | Alexandre Debiève |
-| industry-automotive.jpg | https://unsplash.com/photos/jHZ70nRk7Ns | Lenny Kuhne |
 | industry-ecommerce.jpg | https://unsplash.com/photos/MGaFENpDCsw | Bench Accounting |
